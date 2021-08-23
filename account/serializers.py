@@ -65,7 +65,7 @@ class CreateNewPasswordSerializer(serializers.Serializer):
 
     def validate_email(self, email):
         print(email)
-        if MyUser.objects.filter(email=email).exists():
+        if not MyUser.objects.filter(email=email):
             raise serializers.ValidationError('Пользователь не найден')
         return email
 

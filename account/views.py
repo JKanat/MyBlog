@@ -23,10 +23,11 @@ class RegisterView(APIView):
 
 class ActivationView(APIView):
     def get(self, email, activation_code):
-        user = MyUser.objects.filter(email=email,
+        user = MyUser.objects.filter(email='zanybekovk858@gmail.com',
                                      activation_code=activation_code).first()
+
         if not user:
-            return Response('This user does not exist', 400)
+            return Response('Этот пользователь не существует', 400)
         user.activation_code = ''
         user.is_active = True
         user.save()
@@ -48,14 +49,16 @@ class LogoutView(APIView):
 
 class ForgotPasswordView(APIView):
     def get(self, request):
-        email = request.guery_params.get('email')
+        email = request.query_params.get('email')
         user = get_object_or_404(MyUser, email=email)
         user.is_active = False
+        user.create_activation_code()
         user.save()
         send_activation_code(email=user.email,
                              activation_code=user.activation_code,
                              status='reset_password')
         return Response('Вам отправили письмо на почту')
+
 
 
 class CompleteResetPassword(APIView):

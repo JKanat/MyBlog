@@ -21,6 +21,9 @@ class PostSerializer(serializers.ModelSerializer):
         representation['category'] = CategorySerializer(instance.category).data
         representation['images'] = PostImageSerializer(instance.images.all(), many=True,
                                                        context=self.context).data
+        representation['comments'] = CommentSerializer(instance.comments.all(), many=True,
+                                                       context=self.context).data
+        # representation['category'] = CategorySerializer(instance.category).data
         return representation
 
     def create(self, validated_data):
@@ -66,3 +69,103 @@ class CommentSerializer(serializers.ModelSerializer):
             **validated_data
         )
         return comment
+
+
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.email')
+
+    class Meta:
+        model = Rating
+        fields = ('id', 'author', 'post', 'grade')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        action = self.context.get('action')
+
+        if action == 'list':
+            representation['post'] = instance.post.title
+
+        elif action == 'retrieve':
+            representation['post'] = PostSerializer(instance.post).data
+
+        return representation
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+
+        if Rating.objects.filter(post=validated_data.get('post'), author=validated_data.get('author')):
+            raise serializers.ValidationError('Данный пользователь уже рейтнул этот пост.')
+
+        rating = Rating.objects.create(
+            **validated_data
+        )
+
+        return rating
+
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.email')
+
+    class Meta:
+        model = Like
+        fields = ('id', 'post', 'author', 'status')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        action = self.context.get('action')
+        print(action)
+        if action == 'list':
+            representation['post'] = instance.post.title
+
+        elif action == 'retrieve':
+            representation['post'] = PostSerializer(instance.post).data
+
+
+        return representation
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+
+        if Like.objects.filter(post=validated_data.get('post'), author=validated_data.get('author')):
+            raise serializers.ValidationError('Данный пользователь уже лайкнул этот пост.')
+
+        like = Like.objects.create(
+            **validated_data
+        )
+
+        return like
+
+
+class FavoritesSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.email')
+
+    class Meta:
+        model = Favorites
+        fields = ('id', 'name', 'post', 'author')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        action = self.context.get('action')
+
+        if action == 'list':
+            representation['post'] = instance.post.title
+
+        elif action == 'retrieve':
+            representation['post'] = PostSerializer(instance.post).data
+
+        return representation
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+
+        if Favorites.objects.filter(post=validated_data.get('post'), author=validated_data.get('author')):
+            raise serializers.ValidationError('Данный пост уже добавлен в избранное.')
+
+        favorites = Favorites.objects.create(
+            **validated_data
+        )
+
+        return favorites
